@@ -59,9 +59,16 @@ async function handle(env, msg) {
   if (state.step === "date") {
     const iso = parseDate(text);
     if (!iso) return say(env, id, "Не понял дату. Формат: ДД.ММ.ГГГГ, например 17.05.1990.");
+    await env.SUBS.put(stateKey, JSON.stringify({ step: "city", name: state.name, date: iso }));
+    return say(env, id, "Из какого вы города? Например: Москва, Киев, Краматорск.");
+  }
+
+  if (state.step === "city") {
+    const city = text.replace(/\s+/g, " ");
+    if (city.length < 2) return say(env, id, "Напишите город, например: Москва.");
     await env.SUBS.put(
       subKey,
-      JSON.stringify({ chat_id: id, name: state.name, date: iso }),
+      JSON.stringify({ chat_id: id, name: state.name, date: state.date, city }),
     );
     await env.SUBS.delete(stateKey);
     return say(
