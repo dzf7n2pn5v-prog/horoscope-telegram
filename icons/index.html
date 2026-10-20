@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Асцендент" />
+  <meta name="theme-color" content="#140b2e" />
+  <title>Асцендент — гороскоп на день</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <h1>Асцендент</h1>
+      <p class="sub">Гороскоп на сегодня по вашему восходящему знаку</p>
+    </header>
+
+    <section id="form-card" class="card">
+      <form id="birth-form" autocomplete="off">
+        <label>
+          Дата рождения
+          <input id="birth-date" type="date" required />
+        </label>
+        <label>
+          Время рождения
+          <input id="birth-time" type="time" required />
+          <span class="hint">Асцендент меняется примерно каждые 2 часа, точное время важно</span>
+        </label>
+        <label>
+          Город рождения
+          <select id="birth-city" required></select>
+        </label>
+        <button type="submit" class="btn">Рассчитать асцендент</button>
+        <p id="form-error" class="error" hidden></p>
+      </form>
+    </section>
+
+    <section id="result" class="result" hidden>
+      <div class="asc-card card">
+        <div class="asc-symbol" id="asc-symbol"></div>
+        <div>
+          <p class="label">Ваш асцендент</p>
+          <h2 id="asc-name"></h2>
+          <p class="meta" id="asc-meta"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="label">Солнечный знак</p>
+        <p id="sun-line" class="line"></p>
+      </div>
+
+      <div class="card today">
+        <p class="label" id="today-date"></p>
+        <h3>Гороскоп на день</h3>
+        <dl id="today-sections"></dl>
+        <p class="advice" id="today-advice"></p>
+      </div>
+
+      <button id="change-btn" class="btn ghost" type="button">Изменить данные</button>
+    </section>
+
+    <footer class="foot">Расчёт асцендента по дате, времени и месту рождения. Развлекательный характер.</footer>
+  </main>
+
+  <script src="cities.js"></script>
+  <script src="astro.js"></script>
+  <script src="texts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

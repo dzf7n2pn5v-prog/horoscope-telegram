@@ -1,0 +1,182 @@
+:root {
+  --bg: #140b2e;
+  --bg-2: #1f1245;
+  --card: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #f4f0ff;
+  --muted: #b9aed8;
+  --accent: #f5d27a;
+  --accent-2: #8f6bff;
+  --danger: #ff8a8a;
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 20% 0%, var(--bg-2) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, #2a1659 0%, transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+[hidden] { display: none !important; }
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 24px) 16px calc(env(safe-area-inset-bottom) + 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.top { text-align: center; padding: 8px 0 4px; }
+.top h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+}
+.sub { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+input, select {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  font: inherit;
+  font-size: 17px; /* 16px+ не даёт Safari зумить при фокусе */
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 13px 14px;
+  min-height: 48px;
+}
+input[type="date"], input[type="time"] { color-scheme: dark; }
+select option { background: var(--bg-2); color: var(--text); }
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(143, 107, 255, 0.35);
+}
+
+.hint { font-size: 12px; color: var(--muted); opacity: 0.8; line-height: 1.4; }
+
+.btn {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #8f6bff, #6d3cff);
+  color: #fff;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease, opacity 0.2s ease;
+}
+.btn:active { transform: scale(0.98); opacity: 0.9; }
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 15px;
+  min-height: 46px;
+}
+
+.error { color: var(--danger); font-size: 14px; margin: 10px 0 0; }
+
+.result { display: flex; flex-direction: column; gap: 16px; }
+
+.asc-card { display: flex; align-items: center; gap: 16px; }
+.asc-symbol {
+  flex: 0 0 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+  color: var(--accent);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 210, 122, 0.18), transparent 70%);
+  border: 1px solid rgba(245, 210, 122, 0.35);
+}
+.label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+}
+h2 { margin: 0; font-size: 26px; color: var(--accent); }
+h3 { margin: 0 0 12px; font-size: 19px; font-weight: 600; }
+.meta { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.line { margin: 0; font-size: 17px; }
+
+.today dl { margin: 0; }
+.today dt {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.today dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.advice {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(245, 210, 122, 0.1);
+  border: 1px solid rgba(245, 210, 122, 0.25);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.foot {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.7;
+  padding: 8px 12px 0;
+  line-height: 1.4;
+}
+
+@media (min-width: 600px) {
+  .app { padding-top: 40px; }
+}
