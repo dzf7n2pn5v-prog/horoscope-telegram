@@ -148,10 +148,19 @@ function renderPng(svg) {
 }
 
 // Персональный режим: список людей из EMPLOYEES_JSON
+// Убираем управляющие символы и служебные метки вставки терминала (ESC[200~ и ESC[201~)
+function cleanName(name) {
+  return String(name)
+    .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "")
+    .replace(/\[20[01]~/g, "")
+    .replace(/[\x00-\x1f\x7f]/g, "")
+    .trim();
+}
+
 function loadEmployees() {
   const raw = process.env.EMPLOYEES_JSON;
   if (!raw) return null;
-  const list = JSON.parse(raw);
+  const list = JSON.parse(raw).map((p) => ({ ...p, name: cleanName(p.name) }));
   for (const p of list) {
     if (!p.name || !/^\d{4}-\d{2}-\d{2}$/.test(p.date || "")) {
       throw new Error(`Некорректная запись в EMPLOYEES_JSON: ${JSON.stringify(p)}`);
