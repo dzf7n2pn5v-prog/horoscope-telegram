@@ -177,7 +177,9 @@ function buildPersonalCards(people, dateKey, label) {
     const sign = SIGNS[sunSignIndex(month, day)];
     // соль по имени: у каждого человека свой текст на день
     const h = dailyHoroscope(sign.key, `${dateKey}|${p.name}`);
-    const svg = cardSvg({ name: p.name, sign, dateLabel: label, h });
+    // на карточке только имя: "Фамилия Имя Отчество" -> "Имя"
+    const firstName = p.name.split(/\s+/)[1] || p.name;
+    const svg = cardSvg({ name: firstName, sign, dateLabel: label, h });
     return { name: p.name, sign, png: renderPng(svg) };
   });
 }
