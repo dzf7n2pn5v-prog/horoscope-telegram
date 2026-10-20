@@ -311,6 +311,31 @@ function buildPersonalCards(people, dateKey, label, weather) {
   });
 }
 
+// Подписчики из Worker: нужны FEED_URL (адрес /list) и FEED_TOKEN (тот же EXPORT_TOKEN)
+async function fetchSubscribers() {
+  const url = process.env.FEED_URL;
+  const token = process.env.FEED_TOKEN;
+  if (!url || !token) return [];
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`подписчики: HTTP ${res.status}`);
+  return res.json();
+}
+
+async function sendPhotoTo(chatId, png, filename) {
+  const form = new FormData();
+  form.append("chat_id", String(chatId));
+  form.append("photo", new Blob([png], { type: "image/png" }), filename);
+  const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, {
+    method: "POST",
+    body: form,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body.ok) {
+    throw new Error(`Telegram ${res.status}: ${body.description || "unknown error"}`);
+  }
+  return body.result.message_id;
+}
+
 async function sendPhoto(png, filename) {
   const form = new FormData();
   form.append("chat_id", CHAT_ID);
@@ -391,6 +416,20 @@ async function main() {
     for (const c of cards) {
       const id = await sendPhoto(c.png, `${c.name}.png`);
       console.log(`${new Date().toISOString()} отправлено ${c.name}, message_id=${id}`);
+      await new Promise((r) => setTimeout(r, 1100));
+    }
+
+    // Подписчики из Worker получают свою карточку в личку
+    const subs = await fetchSubscribers();
+    for (const sub of subs) {
+      const [subCard] = buildPersonalCards([{ name: sub.name, date: sub.date }], dateKey, label, weather);
+      try {
+        const id = await sendPhotoTo(sub.chat_id, subCard.png, `${subCard.name}.png`);
+        console.log(`${new Date().toISOString()} личка ${subCard.name}, message_id=${id}`);
+      } catch (err) {
+        // например, человек заблокировал бота: не останавливаем рассылку
+        console.error(`${new Date().toISOString()} личка ${subCard.name}: ${err.message}`);
+      }
       await new Promise((r) => setTimeout(r, 1100));
     }
     return;
