@@ -208,26 +208,26 @@ function skyLayers(code, rnd, W, H) {
   return clouds(5, 0.1, 0.2, H * 0.5);
 }
 
-// Карточка 1080x1920 (9:16): имя, знак, гороскоп, шутка и совет
+// Карточка 1920x1080 (16:9): слева имя и гороскоп, справа знак
 function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
-  const W = 1080;
-  const H = 1920;
+  const W = 1920;
+  const H = 1080;
   const weatherLine = `${WEATHER_PLACE.name} · ${weather.temp}°C · ${weather.label}`;
-  let y = 1140;
+  let y = 500;
   const block = (lines, cls, gap) =>
     lines
       .map((line) => {
-        const el = `<text x="90" y="${y}" class="${cls}">${xml(line)}</text>`;
+        const el = `<text x="120" y="${y}" class="${cls}">${xml(line)}</text>`;
         y += gap;
         return el;
       })
       .join("\n  ");
 
-  const general = block(wrap(h.general, 36).slice(0, 7), "body", 60);
-  y += 50;
-  const joke = block(wrap(h.joke, 36).slice(0, 4), "joke", 56);
-  y += 60;
-  const advice = block(wrap(h.advice, 36).slice(0, 3), "advice", 54);
+  const general = block(wrap(h.general, 48).slice(0, 5), "body", 58);
+  y += 36;
+  const joke = block(wrap(h.joke, 48).slice(0, 3), "joke", 54);
+  y += 40;
+  const advice = block(wrap(h.advice, 48).slice(0, 2), "advice", 52);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
@@ -239,26 +239,26 @@ function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
   </defs>
   <style>
     text { font-family: "DejaVu Sans", "Liberation Sans", Arial, sans-serif; }
-    .label { fill: #ffe066; font-size: 36px; letter-spacing: 4px; }
-    .date { fill: #ffffff; font-size: 44px; }
-    .name { fill: #ffffff; font-size: 84px; font-weight: 700; }
-    .sign { fill: #ffe066; font-size: 66px; font-weight: 700; }
-    .body { fill: #f4f0ff; font-size: 42px; }
-    .joke { fill: #7df9ff; font-size: 40px; font-style: italic; }
-    .advice { fill: #ffd166; font-size: 40px; }
+    .label { fill: #ffe066; font-size: 34px; letter-spacing: 4px; }
+    .date { fill: #ffffff; font-size: 42px; }
+    .name { fill: #ffffff; font-size: 96px; font-weight: 700; }
+    .sign { fill: #ffe066; font-size: 60px; font-weight: 700; }
+    .body { fill: #f4f0ff; font-size: 40px; }
+    .joke { fill: #7df9ff; font-size: 38px; font-style: italic; }
+    .advice { fill: #ffd166; font-size: 38px; }
   </style>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
   ${skyLayers(weather.code, mulberry32(hashSeed(seed)), W, H)}
-  <text x="90" y="160" class="label">ГОРОСКОП НА СЕГОДНЯ</text>
-  <text x="90" y="225" class="date">${xml(dateLabel)}</text>
-  <text x="90" y="290" class="date">${xml(weatherLine)}</text>
-  <text x="90" y="430" class="name">${xml(name)}</text>
-  <circle cx="${W / 2}" cy="740" r="180" fill="none" stroke="#ffe066" stroke-opacity="0.9" stroke-width="8"/>
-  <text x="${W / 2}" y="800" text-anchor="middle" font-size="220" fill="#ffe066">${sign.symbol}</text>
-  <text x="${W / 2}" y="1010" text-anchor="middle" class="sign">${xml(sign.name)}</text>
+  <text x="120" y="120" class="label">ГОРОСКОП НА СЕГОДНЯ</text>
+  <text x="120" y="176" class="date">${xml(dateLabel)}</text>
+  <text x="120" y="226" class="date">${xml(weatherLine)}</text>
+  <text x="120" y="370" class="name">${xml(name)}</text>
   ${general}
   ${joke}
   ${advice}
+  <circle cx="1450" cy="500" r="220" fill="none" stroke="#ffe066" stroke-opacity="0.9" stroke-width="8"/>
+  <text x="1450" y="585" text-anchor="middle" font-size="270" fill="#ffe066">${sign.symbol}</text>
+  <text x="1450" y="820" text-anchor="middle" class="sign">${xml(sign.name)}</text>
 </svg>`;
 }
 
