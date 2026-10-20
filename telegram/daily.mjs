@@ -124,13 +124,92 @@ function weatherTheme(code) {
   if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82))
     return { label: "дождь", palette: ["#3a7bd5", "#2c5364", "#0f2027"] };
   if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86))
-    return { label: "снег", palette: ["#e0f7ff", "#a9d6f5", "#5d8fb8"] };
+    return { label: "снег", palette: ["#5d7fa3", "#3b5878", "#1d2f48"] };
   if (code >= 95) return { label: "гроза", palette: ["#6a3093", "#2b1055", "#0d0221"] };
   return { label: "переменная погода", palette: ["#8a2be2", "#ff5e94", "#1e3a8a"] };
 }
 
+// Детерминированный генератор: один и тот же день и человек дают одну картинку, разные дни — разные
+function hashSeed(text) {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h;
+}
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Слои погоды поверх градиента: тучи, дождь, снег, туман, гроза, солнце
+function skyLayers(code, rnd, W, H) {
+  if (code === undefined) return "";
+  const r = (a, b) => a + (b - a) * rnd();
+  const clouds = (count, opMin, opMax, yMax) =>
+    Array.from({ length: count }, () => {
+      const cx = r(-100, W + 100);
+      const cy = r(60, yMax);
+      const rx = r(160, 340);
+      const ry = r(60, 120);
+      const op = r(opMin, opMax).toFixed(2);
+      return `<ellipse cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" rx="${rx.toFixed(0)}" ry="${ry.toFixed(0)}" fill="#ffffff" fill-opacity="${op}"/>`;
+    }).join("");
+  const rain = (n, color) =>
+    Array.from({ length: n }, () => {
+      const x = r(0, W);
+      const y = r(0, H);
+      const len = r(30, 70);
+      return `<line x1="${x.toFixed(0)}" y1="${y.toFixed(0)}" x2="${(x - len * 0.3).toFixed(0)}" y2="${(y + len).toFixed(0)}" stroke="${color}" stroke-width="3" stroke-opacity="${r(0.25, 0.55).toFixed(2)}" stroke-linecap="round"/>`;
+    }).join("");
+  const flakes = (n) =>
+    Array.from({ length: n }, () => {
+      const x = r(0, W);
+      const y = r(0, H);
+      return `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r(3, 11).toFixed(1)}" fill="#ffffff" fill-opacity="${r(0.5, 0.95).toFixed(2)}"/>`;
+    }).join("");
+  const sunAt = () => {
+    const cx = r(W * 0.55, W * 0.95);
+    const cy = r(H * 0.15, H * 0.35);
+    const rays = Array.from({ length: 16 }, (_, i) => {
+      const a = (i / 16) * Math.PI * 2;
+      return `<line x1="${(cx + Math.cos(a) * 200).toFixed(0)}" y1="${(cy + Math.sin(a) * 200).toFixed(0)}" x2="${(cx + Math.cos(a) * 420).toFixed(0)}" y2="${(cy + Math.sin(a) * 420).toFixed(0)}" stroke="#fff3b0" stroke-width="6" stroke-opacity="0.35"/>`;
+    }).join("");
+    return `<circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="140" fill="#fff6c8" fill-opacity="0.85"/>
+  <circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="260" fill="#fff6c8" fill-opacity="0.18"/>
+  ${rays}`;
+  };
+  const lightning = () => {
+    const x = r(W * 0.3, W * 0.8);
+    const y = r(H * 0.2, H * 0.4);
+    return `<polyline points="${x},${y} ${x - 40},${y + 120} ${x + 10},${y + 130} ${x - 30},${y + 260}" fill="none" stroke="#ffffff" stroke-width="8" stroke-opacity="0.9"/>`;
+  };
+
+  if (code === 0) return sunAt();
+  if (code <= 3) return clouds(8, 0.15, 0.3, H * 0.45);
+  if (code === 45 || code === 48)
+    return Array.from({ length: 6 }, () => {
+      const y = r(H * 0.2, H * 0.9);
+      return `<rect x="0" y="${y.toFixed(0)}" width="${W}" height="${r(80, 200).toFixed(0)}" fill="#ffffff" fill-opacity="${r(0.08, 0.2).toFixed(2)}"/>`;
+    }).join("");
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82))
+    return `${clouds(12, 0.25, 0.45, H * 0.5)}${rain(160, "#bfe6ff")}`;
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86))
+    return `${clouds(10, 0.35, 0.55, H * 0.45)}${flakes(120)}`;
+  if (code >= 95) return `${clouds(12, 0.2, 0.35, H * 0.5)}${rain(200, "#cfe9ff")}${lightning()}`;
+  return clouds(5, 0.1, 0.2, H * 0.5);
+}
+
 // Карточка 1080x1920 (9:16): имя, знак, гороскоп, шутка и совет
-function cardSvg({ name, sign, dateLabel, h, weather }) {
+function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
   const W = 1080;
   const H = 1920;
   const weatherLine = `${WEATHER_PLACE.name} · ${weather.temp}°C · ${weather.label}`;
@@ -169,6 +248,7 @@ function cardSvg({ name, sign, dateLabel, h, weather }) {
     .advice { fill: #ffd166; font-size: 40px; }
   </style>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
+  ${skyLayers(weather.code, mulberry32(hashSeed(seed)), W, H)}
   <text x="90" y="160" class="label">ГОРОСКОП НА СЕГОДНЯ</text>
   <text x="90" y="225" class="date">${xml(dateLabel)}</text>
   <text x="90" y="290" class="date">${xml(weatherLine)}</text>
@@ -226,7 +306,7 @@ function buildPersonalCards(people, dateKey, label, weather) {
     };
     // на карточке только имя: "Фамилия Имя Отчество" -> "Имя"
     const firstName = p.name.split(/\s+/)[1] || p.name;
-    const svg = cardSvg({ name: firstName, sign, dateLabel: label, h, weather });
+    const svg = cardSvg({ name: firstName, sign, dateLabel: label, h, weather, seed: `${dateKey}|${p.name}` });
     return { name: p.name, sign, png: renderPng(svg) };
   });
 }
