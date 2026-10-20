@@ -95,10 +95,45 @@ function wrap(text, maxChars) {
   return lines;
 }
 
+// Погода для фона: Open-Meteo, без ключа. Место по умолчанию — Москва, меняется через WEATHER_LAT/WEATHER_LON
+const WEATHER_PLACE = {
+  name: process.env.WEATHER_CITY || "Москва",
+  lat: Number(process.env.WEATHER_LAT || 55.7558),
+  lon: Number(process.env.WEATHER_LON || 37.6173),
+};
+
+async function fetchWeather() {
+  try {
+    const url =
+      `https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_PLACE.lat}` +
+      `&longitude=${WEATHER_PLACE.lon}&current=weather_code,temperature_2m&timezone=Europe%2FMoscow`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const j = await res.json();
+    return { code: j.current.weather_code, temp: Math.round(j.current.temperature_2m) };
+  } catch {
+    return null;
+  }
+}
+
+// Код погоды WMO -> подпись и три цвета градиента фона
+function weatherTheme(code) {
+  if (code === 0) return { label: "ясно", palette: ["#ffb347", "#ff6f61", "#4facfe"] };
+  if (code <= 3) return { label: "облачно", palette: ["#7f9cf5", "#5b6ee1", "#2c3e8f"] };
+  if (code === 45 || code === 48) return { label: "туман", palette: ["#9aa5b1", "#5f6b7a", "#2f3a48"] };
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82))
+    return { label: "дождь", palette: ["#3a7bd5", "#2c5364", "#0f2027"] };
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86))
+    return { label: "снег", palette: ["#e0f7ff", "#a9d6f5", "#5d8fb8"] };
+  if (code >= 95) return { label: "гроза", palette: ["#6a3093", "#2b1055", "#0d0221"] };
+  return { label: "переменная погода", palette: ["#8a2be2", "#ff5e94", "#1e3a8a"] };
+}
+
 // Карточка 1080x1920 (9:16): имя, знак, гороскоп, шутка и совет
-function cardSvg({ name, sign, dateLabel, h }) {
+function cardSvg({ name, sign, dateLabel, h, weather }) {
   const W = 1080;
   const H = 1920;
+  const weatherLine = `${WEATHER_PLACE.name} · ${weather.temp}°C · ${weather.label}`;
   let y = 1140;
   const block = (lines, cls, gap) =>
     lines
@@ -118,9 +153,9 @@ function cardSvg({ name, sign, dateLabel, h }) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff5e94"/>
-      <stop offset="0.5" stop-color="#8a2be2"/>
-      <stop offset="1" stop-color="#1e3a8a"/>
+      <stop offset="0" stop-color="${weather.palette[0]}"/>
+      <stop offset="0.5" stop-color="${weather.palette[1]}"/>
+      <stop offset="1" stop-color="${weather.palette[2]}"/>
     </linearGradient>
   </defs>
   <style>
@@ -136,6 +171,7 @@ function cardSvg({ name, sign, dateLabel, h }) {
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
   <text x="90" y="160" class="label">ГОРОСКОП НА СЕГОДНЯ</text>
   <text x="90" y="225" class="date">${xml(dateLabel)}</text>
+  <text x="90" y="290" class="date">${xml(weatherLine)}</text>
   <text x="90" y="430" class="name">${xml(name)}</text>
   <circle cx="${W / 2}" cy="740" r="180" fill="none" stroke="#ffe066" stroke-opacity="0.9" stroke-width="8"/>
   <text x="${W / 2}" y="800" text-anchor="middle" font-size="220" fill="#ffe066">${sign.symbol}</text>
@@ -179,7 +215,7 @@ function loadEmployees() {
   return list;
 }
 
-function buildPersonalCards(people, dateKey, label) {
+function buildPersonalCards(people, dateKey, label, weather) {
   return people.map((p) => {
     const [, month, day] = p.date.split("-").map(Number);
     const sign = SIGNS[sunSignIndex(month, day)];
@@ -190,7 +226,7 @@ function buildPersonalCards(people, dateKey, label) {
     };
     // на карточке только имя: "Фамилия Имя Отчество" -> "Имя"
     const firstName = p.name.split(/\s+/)[1] || p.name;
-    const svg = cardSvg({ name: firstName, sign, dateLabel: label, h });
+    const svg = cardSvg({ name: firstName, sign, dateLabel: label, h, weather });
     return { name: p.name, sign, png: renderPng(svg) };
   });
 }
@@ -254,7 +290,13 @@ async function main() {
   const people = loadEmployees();
 
   if (people) {
-    const cards = buildPersonalCards(people, dateKey, label);
+    // если погода недоступна, фон по умолчанию
+    const current = await fetchWeather();
+    const weather = current
+      ? { ...current, ...weatherTheme(current.code) }
+      : { temp: "–", label: "нет данных", palette: ["#8a2be2", "#ff5e94", "#1e3a8a"] };
+    console.log(`погода: ${WEATHER_PLACE.name}, ${weather.temp}°C, ${weather.label}`);
+    const cards = buildPersonalCards(people, dateKey, label, weather);
     if (DRY_RUN) {
       const outDir = join(here, "out");
       mkdirSync(outDir, { recursive: true });
