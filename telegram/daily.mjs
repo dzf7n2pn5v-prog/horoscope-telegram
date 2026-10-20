@@ -153,6 +153,8 @@ function cleanName(name) {
   return String(name)
     .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, "")
     .replace(/\[20[01]~/g, "")
+    .replace(/\]\d+;rgb:[0-9a-fA-F/]+/g, "")
+    .replace(/\[\d+(;\d+)*R/g, "")
     .replace(/[\x00-\x1f\x7f]/g, "")
     .trim();
 }
