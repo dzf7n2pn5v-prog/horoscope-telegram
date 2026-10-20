@@ -1,1 +1,3 @@
 telegram/.env
+telegram/out/
+node_modules/
