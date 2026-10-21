@@ -27,10 +27,10 @@ vm.runInContext(
     readFileSync(join(root, "texts.js"), "utf8") +
     "\n" +
     readFileSync(join(root, "sky.js"), "utf8") +
-    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyHoroscope = skyHoroscope;",
+    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyParts = skyParts; this.SITUATIONS = SITUATIONS; this.ADVICE_BLOCKS = ADVICE_BLOCKS; this.skyLine = skyLine;",
   context,
 );
-const { SIGNS, dailyHoroscope, sunSignIndex, dailyJoke, skyAt, skyHoroscope } = context;
+const { SIGNS, dailyHoroscope, sunSignIndex, dailyJoke, skyAt, skyParts, SITUATIONS, ADVICE_BLOCKS, skyLine } = context;
 
 // Читаем telegram/.env (KEY=value), если он есть. Существующие переменные окружения важнее.
 function loadEnvFile(path) {
@@ -136,9 +136,14 @@ function hashSeed(text) {
   let h = 2166136261;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
-    h = Math.imul(h, 16777619) >>> 0;
+    h = Math.imul(h, 16777619);
   }
-  return h;
+  h ^= h >>> 16;
+  h = Math.imul(h, 2246822507);
+  h ^= h >>> 13;
+  h = Math.imul(h, 3266489909);
+  h ^= h >>> 16;
+  return h >>> 0;
 }
 
 function mulberry32(seed) {
@@ -308,11 +313,13 @@ function buildPersonalCards(people, dateKey, label, weather) {
     const [, month, day] = p.date.split("-").map(Number);
     const sign = SIGNS[sunSignIndex(month, day)];
     // соль по имени: у каждого человека свой текст на день
-    const sh = skyHoroscope(sky, p.date);
+    const parts = skyParts(sky, p.date);
+    const seed = hashSeed(`${dateKey}|${p.name}`);
     const h = {
       ...dailyHoroscope(sign.key, `${dateKey}|${p.name}`),
-      general: sh.general,
-      skyLine: sh.skyLine,
+      general: `${parts.moonText} ${parts.aspectText} ${SITUATIONS[seed % SITUATIONS.length]}.`,
+      advice: ADVICE_BLOCKS[hashSeed(`${seed}|a`) % ADVICE_BLOCKS.length],
+      skyLine: skyLine(sky),
       joke: dailyJoke(sign.key, `${dateKey}|${p.name}`),
     };
     // на карточке только имя: "Фамилия Имя Отчество" -> "Имя"

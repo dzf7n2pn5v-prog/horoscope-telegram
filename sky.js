@@ -149,3 +149,10 @@ function skyHoroscope(sky, birthDate) {
     skyLine: skyLine(sky),
   };
 }
+
+
+// Части гороскопа для одного человека: знак Луны и аспект к его Солнцу
+function skyParts(sky, birthDate) {
+  const aspect = aspectToNatalSun(sky.moonLon, natalSunLongitude(birthDate)) || "none";
+  return { moonText: MOON_IN_SIGN[sky.moonSign], aspectText: ASPECT_TEXT[aspect] };
+}
