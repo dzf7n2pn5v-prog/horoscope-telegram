@@ -79,28 +79,7 @@ async function handle(env, msg) {
   }
 }
 
-// Cron-триггер Cloudflare (06:00 UTC = 09:00 по Москве): запускает рассылку через GitHub Actions
-async function dispatchDaily(env) {
-  const res = await fetch(
-    "https://api.github.com/repos/dzf7n2pn5v-prog/horoscope-telegram/actions/workflows/daily.yml/dispatches",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-        Accept: "application/vnd.github+json",
-        "User-Agent": "horoscope-subs",
-      },
-      body: JSON.stringify({ ref: "main" }),
-    },
-  );
-  if (!res.ok) throw new Error(`GitHub dispatch ${res.status}`);
-}
-
 export default {
-  async scheduled(event, env, ctx) {
-    ctx.waitUntil(dispatchDaily(env));
-  },
-
   async fetch(request, env) {
     const url = new URL(request.url);
 

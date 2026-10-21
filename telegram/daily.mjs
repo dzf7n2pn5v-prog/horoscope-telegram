@@ -27,10 +27,10 @@ vm.runInContext(
     readFileSync(join(root, "texts.js"), "utf8") +
     "\n" +
     readFileSync(join(root, "sky.js"), "utf8") +
-    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyParts = skyParts; this.SITUATIONS = SITUATIONS; this.ADVICE_BLOCKS = ADVICE_BLOCKS; this.skyLine = skyLine;",
+    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyParts = skyParts; this.SITUATIONS = SITUATIONS; this.ADVICE_BLOCKS = ADVICE_BLOCKS; this.skyLine = skyLine; this.rotatedTexts = rotatedTexts;",
   context,
 );
-const { SIGNS, dailyHoroscope, sunSignIndex, dailyJoke, skyAt, skyParts, SITUATIONS, ADVICE_BLOCKS, skyLine } = context;
+const { SIGNS, dailyHoroscope, sunSignIndex, skyAt, skyParts, skyLine, rotatedTexts } = context;
 
 // Читаем telegram/.env (KEY=value), если он есть. Существующие переменные окружения важнее.
 function loadEnvFile(path) {
@@ -220,7 +220,10 @@ function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
   const W = 1920;
   const H = 1080;
   const weatherLine = `${WEATHER_PLACE.name} · ${weather.temp}°C · ${weather.label}`;
-  let y = 500;
+  // длинный гороскоп (больше 5 строк) — компактная раскладка, чтобы всё влезло в 1080 по высоте
+  const generalLines = wrap(h.general, 48).slice(0, 7);
+  const compact = generalLines.length > 5;
+  let y = compact ? 475 : 500;
   const block = (lines, cls, gap) =>
     lines
       .map((line) => {
@@ -230,11 +233,11 @@ function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
       })
       .join("\n  ");
 
-  const general = block(wrap(h.general, 48).slice(0, 5), "body", 58);
-  y += 36;
-  const joke = block(wrap(h.joke, 48).slice(0, 3), "joke", 54);
-  y += 40;
-  const advice = block(wrap(h.advice, 48).slice(0, 2), "advice", 52);
+  const general = block(generalLines, "body", compact ? 50 : 58);
+  y += compact ? 28 : 36;
+  const joke = block(wrap(h.joke, 48).slice(0, 3), "joke", compact ? 50 : 54);
+  y += compact ? 32 : 40;
+  const advice = block(wrap(h.advice, 48).slice(0, 2), "advice", compact ? 48 : 52);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
@@ -306,21 +309,22 @@ function loadEmployees() {
   return list;
 }
 
-function buildPersonalCards(people, dateKey, label, weather) {
+// slotStart: номер первого человека в общем порядке (сотрудники с 0, подписчики после них)
+function buildPersonalCards(people, dateKey, label, weather, slotStart = 0) {
   // небо на текущий момент: одно на всех, меняется каждый день
   const sky = skyAt(Date.now());
-  return people.map((p) => {
+  return people.map((p, i) => {
     const [, month, day] = p.date.split("-").map(Number);
     const sign = SIGNS[sunSignIndex(month, day)];
     // соль по имени: у каждого человека свой текст на день
     const parts = skyParts(sky, p.date);
-    const seed = hashSeed(`${dateKey}|${p.name}`);
+    const rt = rotatedTexts(dateKey, slotStart + i);
     const h = {
       ...dailyHoroscope(sign.key, `${dateKey}|${p.name}`),
-      general: `${parts.moonText} ${parts.aspectText} ${SITUATIONS[seed % SITUATIONS.length]}.`,
-      advice: ADVICE_BLOCKS[hashSeed(`${seed}|a`) % ADVICE_BLOCKS.length],
+      general: `${parts.moonText} ${parts.aspectText} ${rt.situation[0].toUpperCase()}${rt.situation.slice(1)}.`,
+      advice: rt.advice,
       skyLine: skyLine(sky),
-      joke: dailyJoke(sign.key, `${dateKey}|${p.name}`),
+      joke: rt.joke,
     };
     // на карточке только имя: "Фамилия Имя Отчество" -> "Имя"
     const firstName = p.name.split(/\s+/)[1] || p.name;
@@ -438,9 +442,11 @@ async function main() {
     }
 
     // Подписчики из Worker получают свою карточку в личку
-    const subs = await fetchSubscribers();
-    for (const sub of subs) {
-      const [subCard] = buildPersonalCards([{ name: sub.name, date: sub.date }], dateKey, label, weather);
+    let subs = await fetchSubscribers();
+    if (process.env.ONLY_NAME) subs = subs.filter((sub) => String(sub.name).includes(process.env.ONLY_NAME));
+    console.log(`подписчиков из бота: ${subs.length}`);
+    for (const [j, sub] of subs.entries()) {
+      const [subCard] = buildPersonalCards([{ name: sub.name, date: sub.date }], dateKey, label, weather, cards.length + j);
       try {
         const id = await sendPhotoTo(sub.chat_id, subCard.png, `${subCard.name}.png`);
         console.log(`${new Date().toISOString()} личка ${subCard.name}, message_id=${id}`);
