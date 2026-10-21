@@ -1,7 +1,10 @@
 name: Daily horoscope to Telegram
 
-# Расписание 09:00 по Москве запускает Cloudflare Worker (см. worker/index.js), GitHub-расписание отключено
+# GitHub запускает расписание с опозданием (бывает 30+ минут), поэтому старт заранее — в 05:23 UTC (08:23 Москва),
+# а шаг «Ждём 09:00» держит отправку до ровно 06:00:00 UTC (09:00:00 Москва).
 on:
+  schedule:
+    - cron: "23 5 * * *"
   workflow_dispatch:
     inputs:
       only_name:
@@ -12,6 +15,7 @@ on:
 jobs:
   send:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,6 +23,9 @@ jobs:
           node-version: "22"
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Ждём 09:00 по Москве
+        if: github.event_name == 'schedule'
+        run: node -e 'const t=new Date();t.setUTCHours(6,0,0,0);const ms=t-Date.now();if(ms>0){console.log("жду до 09:00:00 МСК, секунд:",Math.round(ms/1000));setTimeout(()=>console.log("09:00, отправляю"),ms)}else{console.log("запуск позже 09:00, отправляю сразу")}'
       - name: Send horoscope
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
