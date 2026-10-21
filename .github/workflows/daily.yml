@@ -1,9 +1,7 @@
 name: Daily horoscope to Telegram
 
+# Расписание 09:00 по Москве запускает Cloudflare Worker (см. worker/index.js), GitHub-расписание отключено
 on:
-  schedule:
-    # 09:00 Москва = 06:00 UTC
-    - cron: "0 6 * * *"
   workflow_dispatch:
     inputs:
       only_name:
