@@ -443,8 +443,8 @@ async function main() {
 
     // Подписчики из Worker получают свою карточку в личку
     let subs = await fetchSubscribers();
+    console.log(`подписчиков из бота всего: ${subs.length}`);
     if (process.env.ONLY_NAME) subs = subs.filter((sub) => String(sub.name).includes(process.env.ONLY_NAME));
-    console.log(`подписчиков из бота: ${subs.length}`);
     for (const [j, sub] of subs.entries()) {
       const [subCard] = buildPersonalCards([{ name: sub.name, date: sub.date }], dateKey, label, weather, cards.length + j);
       try {
