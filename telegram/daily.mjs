@@ -25,10 +25,12 @@ vm.runInContext(
   readFileSync(join(root, "astro.js"), "utf8") +
     "\n" +
     readFileSync(join(root, "texts.js"), "utf8") +
-    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke;",
+    "\n" +
+    readFileSync(join(root, "sky.js"), "utf8") +
+    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyHoroscope = skyHoroscope;",
   context,
 );
-const { SIGNS, dailyHoroscope, sunSignIndex, dailyJoke } = context;
+const { SIGNS, dailyHoroscope, sunSignIndex, dailyJoke, skyAt, skyHoroscope } = context;
 
 // Читаем telegram/.env (KEY=value), если он есть. Существующие переменные окружения важнее.
 function loadEnvFile(path) {
@@ -246,13 +248,15 @@ function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
     .body { fill: #f4f0ff; font-size: 40px; }
     .joke { fill: #7df9ff; font-size: 38px; font-style: italic; }
     .advice { fill: #ffd166; font-size: 38px; }
+    .sky { fill: #ffffff; font-size: 34px; opacity: 0.9; }
   </style>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
   ${skyLayers(weather.code, mulberry32(hashSeed(seed)), W, H)}
   <text x="120" y="120" class="label">ГОРОСКОП НА СЕГОДНЯ</text>
   <text x="120" y="176" class="date">${xml(dateLabel)}</text>
   <text x="120" y="226" class="date">${xml(weatherLine)}</text>
-  <text x="120" y="370" class="name">${xml(name)}</text>
+  <text x="120" y="282" class="sky">${xml(h.skyLine || "")}</text>
+  <text x="120" y="400" class="name">${xml(name)}</text>
   ${general}
   ${joke}
   ${advice}
@@ -296,12 +300,17 @@ function loadEmployees() {
 }
 
 function buildPersonalCards(people, dateKey, label, weather) {
+  // небо на текущий момент: одно на всех, меняется каждый день
+  const sky = skyAt(Date.now());
   return people.map((p) => {
     const [, month, day] = p.date.split("-").map(Number);
     const sign = SIGNS[sunSignIndex(month, day)];
     // соль по имени: у каждого человека свой текст на день
+    const sh = skyHoroscope(sky, p.date);
     const h = {
       ...dailyHoroscope(sign.key, `${dateKey}|${p.name}`),
+      general: sh.general,
+      skyLine: sh.skyLine,
       joke: dailyJoke(sign.key, `${dateKey}|${p.name}`),
     };
     // на карточке только имя: "Фамилия Имя Отчество" -> "Имя"
