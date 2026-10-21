@@ -290,7 +290,9 @@ function cleanName(name) {
 function loadEmployees() {
   const raw = process.env.EMPLOYEES_JSON;
   if (!raw) return null;
-  const list = JSON.parse(raw).map((p) => ({ ...p, name: cleanName(p.name) }));
+  let list = JSON.parse(raw).map((p) => ({ ...p, name: cleanName(p.name) }));
+  // ONLY_NAME: отправить только тех, в чьём имени есть эта строка (для точечной отправки)
+  if (process.env.ONLY_NAME) list = list.filter((p) => p.name.includes(process.env.ONLY_NAME));
   for (const p of list) {
     if (!p.name || !/^\d{4}-\d{2}-\d{2}$/.test(p.date || "")) {
       throw new Error(`Некорректная запись в EMPLOYEES_JSON: ${JSON.stringify(p)}`);

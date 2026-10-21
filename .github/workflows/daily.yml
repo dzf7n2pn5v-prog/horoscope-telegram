@@ -4,7 +4,12 @@ on:
   schedule:
     # 09:00 Москва = 06:00 UTC
     - cron: "0 6 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      only_name:
+        description: "Отправить только тех, чьё имя содержит эту строку (пусто — всем)"
+        required: false
+        default: ""
 
 jobs:
   send:
@@ -21,4 +26,5 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           EMPLOYEES_JSON: ${{ secrets.EMPLOYEES_JSON }}
+          ONLY_NAME: ${{ github.event.inputs.only_name }}
         run: node telegram/daily.mjs
