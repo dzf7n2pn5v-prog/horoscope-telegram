@@ -27,10 +27,10 @@ vm.runInContext(
     readFileSync(join(root, "texts.js"), "utf8") +
     "\n" +
     readFileSync(join(root, "sky.js"), "utf8") +
-    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyParts = skyParts; this.SITUATIONS = SITUATIONS; this.ADVICE_BLOCKS = ADVICE_BLOCKS; this.skyLine = skyLine; this.rotatedTexts = rotatedTexts;",
+    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyParts = skyParts; this.SITUATIONS = SITUATIONS; this.ADVICE_BLOCKS = ADVICE_BLOCKS; this.skyLine = skyLine; this.rotatedTexts = rotatedTexts; this.specialTexts = specialTexts;",
   context,
 );
-const { SIGNS, dailyHoroscope, sunSignIndex, skyAt, skyParts, skyLine, rotatedTexts } = context;
+const { SIGNS, dailyHoroscope, sunSignIndex, skyAt, skyParts, skyLine, rotatedTexts, specialTexts } = context;
 
 // Читаем telegram/.env (KEY=value), если он есть. Существующие переменные окружения важнее.
 function loadEnvFile(path) {
@@ -260,7 +260,8 @@ function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
   </style>
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
   ${skyLayers(weather.code, mulberry32(hashSeed(seed)), W, H)}
-  <text x="120" y="120" class="label">ГОРОСКОП НА СЕГОДНЯ</text>
+  ${h.special ? `<rect x="14" y="14" width="${W - 28}" height="${H - 28}" rx="28" fill="none" stroke="#ffd66b" stroke-width="10"/>` : ""}
+  <text x="120" y="120" class="label">${h.special ? "ОСОБЕННЫЙ ГОРОСКОП НА СЕГОДНЯ" : "ГОРОСКОП НА СЕГОДНЯ"}</text>
   <text x="120" y="176" class="date">${xml(dateLabel)}</text>
   <text x="120" y="226" class="date">${xml(weatherLine)}</text>
   <text x="120" y="282" class="sky">${xml(h.skyLine || "")}</text>
@@ -318,10 +319,14 @@ function buildPersonalCards(people, dateKey, label, weather, slotStart = 0) {
     const sign = SIGNS[sunSignIndex(month, day)];
     // соль по имени: у каждого человека свой текст на день
     const parts = skyParts(sky, p.date);
-    const rt = rotatedTexts(dateKey, slotStart + i);
+    // особенный гороскоп: свои позитивные пулы, не пересекаются с общими
+    const rt = p.special
+      ? specialTexts(dateKey, sky.moonSign, parts.aspect)
+      : { ...rotatedTexts(dateKey, slotStart + i), ...parts };
     const h = {
       ...dailyHoroscope(sign.key, `${dateKey}|${p.name}`),
-      general: `${parts.moonText} ${parts.aspectText} ${rt.situation[0].toUpperCase()}${rt.situation.slice(1)}.`,
+      general: `${rt.moonText} ${rt.aspectText} ${rt.situation[0].toUpperCase()}${rt.situation.slice(1)}.`,
+      special: Boolean(p.special),
       advice: rt.advice,
       skyLine: skyLine(sky),
       joke: rt.joke,
