@@ -310,6 +310,18 @@ function loadEmployees() {
   return list;
 }
 
+// Имя для карточки: «Фамилия Имя Отчество» -> «Имя».
+// Подписчики иногда пишут в имени дату и город («Миша 20.11.1992 киев») — всё начиная со слова с цифрами отбрасываем.
+function displayFirstName(full) {
+  const words = [];
+  for (const w of String(full).trim().split(/\s+/)) {
+    if (/\d/.test(w)) break;
+    if (/^[\p{L}-]+$/u.test(w)) words.push(w);
+  }
+  const pick = words[1] || words[0] || String(full).trim();
+  return pick[0].toUpperCase() + pick.slice(1);
+}
+
 // slotStart: номер первого человека в общем порядке (сотрудники с 0, подписчики после них)
 function buildPersonalCards(people, dateKey, label, weather, slotStart = 0) {
   // небо на текущий момент: одно на всех, меняется каждый день
@@ -332,7 +344,7 @@ function buildPersonalCards(people, dateKey, label, weather, slotStart = 0) {
       joke: rt.joke,
     };
     // на карточке только имя: "Фамилия Имя Отчество" -> "Имя"
-    const firstName = p.name.split(/\s+/)[1] || p.name;
+    const firstName = displayFirstName(p.name);
     const svg = cardSvg({ name: firstName, sign, dateLabel: label, h, weather, seed: `${dateKey}|${p.name}` });
     return { name: p.name, sign, png: renderPng(svg) };
   });
