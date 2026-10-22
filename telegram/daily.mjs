@@ -302,9 +302,10 @@ function loadEmployees() {
   let list = JSON.parse(raw).map((p) => ({ ...p, name: cleanName(p.name) }));
   // ONLY_NAME: отправить только тех, в чьём имени есть эта строка (для точечной отправки)
   if (process.env.ONLY_NAME) list = list.filter((p) => p.name.includes(process.env.ONLY_NAME));
-  for (const p of list) {
+  for (const [i, p] of list.entries()) {
     if (!p.name || !/^\d{4}-\d{2}-\d{2}$/.test(p.date || "")) {
-      throw new Error(`Некорректная запись в EMPLOYEES_JSON: ${JSON.stringify(p)}`);
+      // без имени и даты в тексте ошибки: логи репозитория публичные
+      throw new Error(`Некорректная запись в EMPLOYEES_JSON: №${i + 1}`);
     }
   }
   return list;
@@ -452,9 +453,10 @@ async function main() {
       return;
     }
     if (!TOKEN || !CHAT_ID) throw new Error("Задайте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID");
-    for (const c of cards) {
-      const id = await sendPhoto(c.png, `${c.name}.png`);
-      console.log(`${new Date().toISOString()} отправлено ${c.name}, message_id=${id}`);
+    // в логах только номера: логи репозитория публичные
+    for (const [i, c] of cards.entries()) {
+      const id = await sendPhoto(c.png, "horoscope.png");
+      console.log(`${new Date().toISOString()} отправлено в группу ${i + 1}/${cards.length}, message_id=${id}`);
       await new Promise((r) => setTimeout(r, 1100));
     }
 
@@ -465,11 +467,11 @@ async function main() {
     for (const [j, sub] of subs.entries()) {
       const [subCard] = buildPersonalCards([{ name: sub.name, date: sub.date }], dateKey, label, weather, cards.length + j);
       try {
-        const id = await sendPhotoTo(sub.chat_id, subCard.png, `${subCard.name}.png`);
-        console.log(`${new Date().toISOString()} личка ${subCard.name}, message_id=${id}`);
+        const id = await sendPhotoTo(sub.chat_id, subCard.png, "horoscope.png");
+        console.log(`${new Date().toISOString()} личка ${j + 1}/${subs.length}, message_id=${id}`);
       } catch (err) {
         // например, человек заблокировал бота: не останавливаем рассылку
-        console.error(`${new Date().toISOString()} личка ${subCard.name}: ${err.message}`);
+        console.error(`${new Date().toISOString()} личка ${j + 1}/${subs.length}: ${err.message}`);
       }
       await new Promise((r) => setTimeout(r, 1100));
     }
