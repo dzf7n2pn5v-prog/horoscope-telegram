@@ -642,8 +642,9 @@ const SPECIAL_JOKES = [
 ];
 
 // Фразы особенного гороскопа на день: ротация по кругу, повторы не раньше чем через 31 день
-function specialTexts(dateKey, moonSign, aspect) {
-  const day = dayNumber(dateKey);
+// shift — сдвиг ротации для разовой замены варианта (по умолчанию 0)
+function specialTexts(dateKey, moonSign, aspect, shift = 0) {
+  const day = dayNumber(dateKey) + shift;
   return {
     moonText: SPECIAL_MOON[moonSign],
     aspectText: SPECIAL_ASPECT[aspect],

@@ -334,7 +334,7 @@ function buildPersonalCards(people, dateKey, label, weather, slotStart = 0) {
     const parts = skyParts(sky, p.date);
     // особенный гороскоп: свои позитивные пулы, не пересекаются с общими
     const rt = p.special
-      ? specialTexts(dateKey, sky.moonSign, parts.aspect)
+      ? specialTexts(dateKey, sky.moonSign, parts.aspect, Number(process.env.SPECIAL_SHIFT || 0))
       : { ...rotatedTexts(dateKey, slotStart + i), ...parts };
     const h = {
       ...dailyHoroscope(sign.key, `${dateKey}|${p.name}`),

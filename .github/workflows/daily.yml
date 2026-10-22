@@ -14,6 +14,10 @@ on:
         description: "Отправить только тех, чьё имя содержит эту строку (пусто — всем)"
         required: false
         default: ""
+      special_shift:
+        description: "Сдвиг ротации особенного гороскопа (0 — обычный вариант)"
+        required: false
+        default: "0"
 
 concurrency:
   group: daily-horoscope
@@ -60,4 +64,5 @@ jobs:
           FEED_URL: ${{ secrets.FEED_URL }}
           FEED_TOKEN: ${{ secrets.FEED_TOKEN }}
           ONLY_NAME: ${{ github.event.inputs.only_name }}
+          SPECIAL_SHIFT: ${{ github.event.inputs.special_shift }}
         run: node telegram/daily.mjs
