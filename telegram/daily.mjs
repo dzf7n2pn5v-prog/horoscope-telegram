@@ -27,10 +27,10 @@ vm.runInContext(
     readFileSync(join(root, "texts.js"), "utf8") +
     "\n" +
     readFileSync(join(root, "sky.js"), "utf8") +
-    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyParts = skyParts; this.SITUATIONS = SITUATIONS; this.ADVICE_BLOCKS = ADVICE_BLOCKS; this.skyLine = skyLine; this.rotatedTexts = rotatedTexts; this.specialTexts = specialTexts;",
+    "\n;this.SIGNS = SIGNS; this.dailyHoroscope = dailyHoroscope; this.sunSignIndex = sunSignIndex; this.dailyJoke = dailyJoke; this.skyAt = skyAt; this.skyParts = skyParts; this.SITUATIONS = SITUATIONS; this.ADVICE_BLOCKS = ADVICE_BLOCKS; this.skyLine = skyLine; this.rotatedTexts = rotatedTexts; this.specialTexts = specialTexts; this.moonTextFor = moonTextFor; this.aspectTextFor = aspectTextFor;",
   context,
 );
-const { SIGNS, dailyHoroscope, sunSignIndex, skyAt, skyParts, skyLine, rotatedTexts, specialTexts } = context;
+const { SIGNS, dailyHoroscope, sunSignIndex, skyAt, skyParts, skyLine, rotatedTexts, specialTexts, moonTextFor, aspectTextFor } = context;
 
 // Читаем telegram/.env (KEY=value), если он есть. Существующие переменные окружения важнее.
 function loadEnvFile(path) {
@@ -335,10 +335,14 @@ function buildPersonalCards(people, dateKey, label, weather, slotStart = 0) {
     // особенный гороскоп: свои позитивные пулы, не пересекаются с общими
     const rt = p.special
       ? specialTexts(dateKey, sky.moonSign, parts.aspect, Number(process.env.SPECIAL_SHIFT || 0))
-      : { ...rotatedTexts(dateKey, slotStart + i), ...parts };
+      : {
+          ...rotatedTexts(dateKey, slotStart + i),
+          moonText: moonTextFor(sky.moonSign, dateKey),
+          aspectText: aspectTextFor(parts.aspect, dateKey),
+        };
     const h = {
       ...dailyHoroscope(sign.key, `${dateKey}|${p.name}`),
-      general: `${rt.moonText} ${rt.aspectText} ${rt.situation[0].toUpperCase()}${rt.situation.slice(1)}.`,
+      general: [rt.moonText, rt.aspectText, `${rt.situation[0].toUpperCase()}${rt.situation.slice(1)}.`].filter(Boolean).join(" "),
       special: Boolean(p.special),
       advice: rt.advice,
       skyLine: skyLine(sky),
