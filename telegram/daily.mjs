@@ -262,7 +262,7 @@ function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
   <rect width="${W}" height="${H}" fill="url(#bg)"/>
   ${skyLayers(weather.code, mulberry32(hashSeed(seed)), W, H)}
   ${h.special ? `<rect x="14" y="14" width="${W - 28}" height="${H - 28}" rx="28" fill="none" stroke="#ffd66b" stroke-width="10"/>` : ""}
-  <text x="120" y="120" class="label">${h.special ? "ОСОБЕННЫЙ ГОРОСКОП НА СЕГОДНЯ" : "ГОРОСКОП НА СЕГОДНЯ"}</text>
+  <text x="120" y="120" class="label">ГОРОСКОП НА СЕГОДНЯ</text>
   <text x="120" y="176" class="date">${xml(dateLabel)}</text>
   <text x="120" y="226" class="date">${xml(weatherLine)}</text>
   <text x="120" y="282" class="sky">${xml(h.skyLine || "")}</text>
@@ -404,7 +404,7 @@ function specialCardSvg({ name, sign, dateLabel, h, weather, seed }) {
   <rect x="18" y="18" width="${W - 36}" height="${H - 36}" rx="34" fill="none" stroke="url(#gold)" stroke-width="6"/>
   <rect x="38" y="38" width="${W - 76}" height="${H - 76}" rx="24" fill="none" stroke="#ffd98a" stroke-opacity="0.45" stroke-width="2"/>
   ${corner(38, 52)}${corner(W - 38, 52)}${corner(38, H - 26)}${corner(W - 38, H - 26)}
-  <text x="140" y="140" class="label">✦ ОСОБЕННЫЙ ГОРОСКОП ✦</text>
+  <text x="140" y="140" class="label">✦ ГОРОСКОП НА СЕГОДНЯ ✦</text>
   <text x="140" y="270" class="name" fill="url(#gold)">${xml(name)}</text>
   <text x="140" y="328" class="date">${xml(dateLabel)} · ${xml(weatherLine)}</text>
   <text x="140" y="374" class="sky">${xml(h.skyLine || "")}</text>
