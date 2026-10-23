@@ -217,6 +217,7 @@ function skyLayers(code, rnd, W, H) {
 
 // Карточка 1920x1080 (16:9): слева имя и гороскоп, справа знак
 function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
+  if (h.special) return specialCardSvg({ name, sign, dateLabel, h, weather, seed });
   const W = 1920;
   const H = 1080;
   const weatherLine = `${WEATHER_PLACE.name} · ${weather.temp}°C · ${weather.label}`;
@@ -272,6 +273,149 @@ function cardSvg({ name, sign, dateLabel, h, weather, seed }) {
   <circle cx="1450" cy="500" r="220" fill="none" stroke="#ffe066" stroke-opacity="0.9" stroke-width="8"/>
   <text x="1450" y="585" text-anchor="middle" font-size="270" fill="#ffe066">${sign.symbol}</text>
   <text x="1450" y="820" text-anchor="middle" class="sign">${xml(sign.name)}</text>
+</svg>`;
+}
+
+// Особенная карточка (поле "special"): своё оформление — ночное небо, звёзды, созвездие знака,
+// имя золотым курсивом, двойная рамка. Погода остаётся лёгкой дымкой поверх неба.
+const CONSTELLATIONS = {
+  // упрощённые контуры созвездий: точки в долях рамки 0..1 и линии между ними
+  aquarius: {
+    points: [[0.05, 0.2], [0.2, 0.12], [0.36, 0.2], [0.5, 0.1], [0.58, 0.32], [0.48, 0.52], [0.62, 0.7], [0.8, 0.62], [0.95, 0.82], [0.4, 0.78], [0.28, 0.92]],
+    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10]],
+  },
+};
+
+function specialCardSvg({ name, sign, dateLabel, h, weather, seed }) {
+  const W = 1920;
+  const H = 1080;
+  const rnd = mulberry32(hashSeed(`${seed}|stars`));
+  const weatherLine = `${WEATHER_PLACE.name} · ${weather.temp}°C · ${weather.label}`;
+
+  // звёздное небо: расположение меняется каждый день
+  const stars = Array.from({ length: 170 }, () => {
+    const x = (rnd() * W).toFixed(0);
+    const y = (rnd() * H).toFixed(0);
+    const r = (0.8 + rnd() * 2.6).toFixed(1);
+    const o = (0.25 + rnd() * 0.75).toFixed(2);
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="#ffffff" fill-opacity="${o}"/>`;
+  }).join("");
+  const sparkles = Array.from({ length: 9 }, () => {
+    const x = (1120 + rnd() * 720).toFixed(0);
+    const y = (90 + rnd() * 900).toFixed(0);
+    const s = (18 + rnd() * 26).toFixed(0);
+    return `<text x="${x}" y="${y}" font-size="${s}" fill="#ffe7a8" fill-opacity="0.85" text-anchor="middle">✦</text>`;
+  }).join("");
+
+  // созвездие знака за кругом
+  const cons = CONSTELLATIONS[sign.key];
+  let constellation = "";
+  if (cons) {
+    const bx = 1180;
+    const by = 140;
+    const bw = 640;
+    const bh = 760;
+    const pt = ([u, v]) => [bx + u * bw, by + v * bh];
+    constellation =
+      cons.lines
+        .map(([a, b]) => {
+          const [x1, y1] = pt(cons.points[a]);
+          const [x2, y2] = pt(cons.points[b]);
+          return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ffe7a8" stroke-opacity="0.35" stroke-width="2.5"/>`;
+        })
+        .join("") +
+      cons.points
+        .map((q) => {
+          const [x, y] = pt(q);
+          return `<circle cx="${x}" cy="${y}" r="7" fill="#fff4d6"/><circle cx="${x}" cy="${y}" r="18" fill="#ffe7a8" fill-opacity="0.18"/>`;
+        })
+        .join("");
+  }
+
+  // погода лёгкой дымкой (солнце на ночном небе не рисуем)
+  const weatherHaze = weather.code && weather.code !== 0
+    ? `<g opacity="0.32">${skyLayers(weather.code, mulberry32(hashSeed(`${seed}|weather`)), W, H)}</g>`
+    : "";
+
+  // текст: обращение по имени
+  let y = 440;
+  const block = (lines, cls, gap) =>
+    lines
+      .map((line) => {
+        const el = `<text x="140" y="${y}" class="${cls}">${xml(line)}</text>`;
+        y += gap;
+        return el;
+      })
+      .join("\n  ");
+  const general = block(wrap(`${name}, ${h.general}`, 46).slice(0, 7), "body", 52);
+  // значки отдельным элементом: строка со значком из другого шрифта теряла курсив
+  y += 34;
+  const jokeIcon = `<text x="100" y="${y}" font-size="34" fill="#ffc2dc">✦</text>`;
+  const joke = block(wrap(h.joke, 46).slice(0, 3), "joke", 50);
+  y += 34;
+  const adviceIcon = `<text x="100" y="${y}" font-size="34" fill="#ffe7a8">♡</text>`;
+  const advice = block(wrap(h.advice, 46).slice(0, 2), "advice", 50);
+
+  const corner = (x, yy) => `<text x="${x}" y="${yy}" font-size="34" fill="#ffd98a" text-anchor="middle">✦</text>`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#140a2e"/>
+      <stop offset="0.55" stop-color="#2e1550"/>
+      <stop offset="1" stop-color="#5a1f5c"/>
+    </linearGradient>
+    <radialGradient id="glowRose" cx="0.82" cy="0.85" r="0.55">
+      <stop offset="0" stop-color="#ff7eb6" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ff7eb6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowViolet" cx="0.15" cy="0.1" r="0.5">
+      <stop offset="0" stop-color="#8f6bff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#8f6bff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="signGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffe7a8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1c1"/>
+      <stop offset="0.5" stop-color="#ffd27a"/>
+      <stop offset="1" stop-color="#f7a8c8"/>
+    </linearGradient>
+  </defs>
+  <style>
+    text { font-family: "DejaVu Sans", "Liberation Sans", Arial, sans-serif; }
+    .label { fill: #ffd98a; font-size: 30px; letter-spacing: 6px; }
+    .name { font-family: "DejaVu Serif", Georgia, "Times New Roman", serif; font-size: 128px; font-style: italic; font-weight: 700; }
+    .date { fill: #ffffff; fill-opacity: 0.88; font-size: 34px; }
+    .sky { fill: #ffffff; fill-opacity: 0.72; font-size: 28px; }
+    .body { fill: #fff8ef; font-size: 40px; }
+    .joke { fill: #ffc2dc; font-size: 37px; font-style: italic; }
+    .advice { fill: #ffe7a8; font-size: 37px; }
+    .signname { font-family: "DejaVu Serif", Georgia, "Times New Roman", serif; font-size: 66px; font-style: italic; }
+  </style>
+  <rect width="${W}" height="${H}" fill="url(#night)"/>
+  <rect width="${W}" height="${H}" fill="url(#glowViolet)"/>
+  <rect width="${W}" height="${H}" fill="url(#glowRose)"/>
+  ${stars}
+  ${weatherHaze}
+  ${constellation}
+  ${sparkles}
+  <rect x="18" y="18" width="${W - 36}" height="${H - 36}" rx="34" fill="none" stroke="url(#gold)" stroke-width="6"/>
+  <rect x="38" y="38" width="${W - 76}" height="${H - 76}" rx="24" fill="none" stroke="#ffd98a" stroke-opacity="0.45" stroke-width="2"/>
+  ${corner(38, 52)}${corner(W - 38, 52)}${corner(38, H - 26)}${corner(W - 38, H - 26)}
+  <text x="140" y="140" class="label">✦ ОСОБЕННЫЙ ГОРОСКОП ✦</text>
+  <text x="140" y="270" class="name" fill="url(#gold)">${xml(name)}</text>
+  <text x="140" y="328" class="date">${xml(dateLabel)} · ${xml(weatherLine)}</text>
+  <text x="140" y="374" class="sky">${xml(h.skyLine || "")}</text>
+  ${general}
+  ${jokeIcon}${joke}
+  ${adviceIcon}${advice}
+  <circle cx="1500" cy="500" r="300" fill="url(#signGlow)"/>
+  <circle cx="1500" cy="500" r="215" fill="#1d0e3a" fill-opacity="0.55" stroke="url(#gold)" stroke-width="7"/>
+  <circle cx="1500" cy="500" r="236" fill="none" stroke="#ffd98a" stroke-opacity="0.4" stroke-width="2"/>
+  <text x="1500" y="595" text-anchor="middle" font-size="270" fill="url(#gold)">${sign.symbol}</text>
+  <text x="1500" y="830" text-anchor="middle" class="signname" fill="url(#gold)">${xml(sign.name)}</text>
 </svg>`;
 }
 
